@@ -69,6 +69,7 @@ export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
           <View style={styles.logoContainer}>
             <Image source={logo} style={styles.logo} resizeMode="contain" />
             <Text style={styles.logoText}>speakAI</Text>
+            <Text style={styles.subtitle}>Welcome! Please login to continue.</Text>
           </View>
           <Card style={styles.card} elevation={4}>
             <TextInput
@@ -171,6 +172,12 @@ const styles = StyleSheet.create({
     color: '#246bfd',
     letterSpacing: 1,
     marginBottom: 8,
+  },
+  subtitle: {
+    color: '#b0b8c1',
+    fontSize: 18,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   card: {
     width: '100%',

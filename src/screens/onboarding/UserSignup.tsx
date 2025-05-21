@@ -102,6 +102,7 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
           <View style={styles.logoContainer}>
             <Image source={logo} style={styles.logo} resizeMode="contain" />
             <Text style={styles.logoText}>speakAI</Text>
+            <Text style={styles.subtitle}>Create an account to get started.</Text>
           </View>
           <Card style={styles.card} elevation={4}>
             <View style={styles.avatarContainer}>
@@ -230,6 +231,12 @@ const styles = StyleSheet.create({
     color: '#246bfd',
     letterSpacing: 1,
     marginBottom: 8,
+  },
+  subtitle: {
+    color: '#b0b8c1',
+    fontSize: 18,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   card: {
     width: '100%',
