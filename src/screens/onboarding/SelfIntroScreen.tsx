@@ -29,8 +29,8 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
-
-  const durationTimer = useRef<NodeJS.Timeout>();
+  
+  const durationTimer = useRef<NodeJS.Timeout | null>(null);
   const pulseAnim = useSharedValue(1);
   const waveAnim = useSharedValue(0);
 

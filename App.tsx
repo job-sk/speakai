@@ -10,6 +10,7 @@ import { UserLogin } from 'screens/onboarding/UserLogin';
 import { UserSignup } from 'screens/onboarding/UserSignup';
 import { QuestionnaireScreen } from 'screens/onboarding/QuestionnaireScreen';
 import { DashboardScreen } from 'screens/dashboard/DashboardScreen';
+import { SelfIntroScreen } from 'screens/onboarding/SelfIntroScreen';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -38,6 +39,7 @@ export default function App() {
                   <Stack.Screen name="UserLoginScreen" component={UserLogin} />
                   <Stack.Screen name="QuestionnaireScreen" component={QuestionnaireScreen} />
                   <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
+                  <Stack.Screen name="SelfIntroScreen" component={SelfIntroScreen} />
                 </Stack.Navigator>
               </NavigationContainer>
             </SafeAreaView>

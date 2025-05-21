@@ -7,4 +7,5 @@ export type RootStackParamList = {
   OnboardingQuestionnaire: undefined;
   VocabularyTest: { onboardingAnswers: any[] };
   VocabularyResult: { onboardingAnswers: any[]; selectedWords: string[] };
+  SelfIntroScreen: undefined;
 }; 
