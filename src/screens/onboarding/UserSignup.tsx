@@ -99,6 +99,9 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
         style={styles.keyboardAvoidingView}
       >
         <View style={styles.overlay}>
+          <TouchableOpacity style={styles.backArrow} onPress={() => navigation.navigate('Welcome')}>
+            <MaterialCommunityIcons name="arrow-left" size={32} color="#fff" />
+          </TouchableOpacity>
           <View style={styles.logoContainer}>
             <Image source={logo} style={styles.logo} resizeMode="contain" />
             <Text style={styles.logoText}>speakAI</Text>
@@ -292,5 +295,12 @@ const styles = StyleSheet.create({
     marginTop: -12,
     marginBottom: 8,
     marginLeft: 4,
+  },
+  backArrow: {
+    position: 'absolute',
+    top: 18,
+    left: 18,
+    zIndex: 10,
+    padding: 4,
   },
 });

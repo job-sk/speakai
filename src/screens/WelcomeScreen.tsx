@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types';
+import { RootStackParamList } from '../navigation/types';
 import Animated, { 
   useAnimatedStyle, 
   useSharedValue, 
@@ -102,9 +102,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
         <Animated.View style={[styles.buttonContainer, buttonStyle]}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate('UserLoginScreen')}
+            onPress={() => navigation.navigate('QuestionnaireScreen')}
           >
             <Text style={styles.buttonText}>Get Started</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate('UserLoginScreen')}
+          >
+            <Text style={styles.secondaryButtonText}>Already have an account</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -236,5 +242,18 @@ const styles = StyleSheet.create({
     color: '#a0a0a0',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  secondaryButton: {
+    marginTop: 18,
+    backgroundColor: 'transparent',
+    paddingVertical: 10,
+    alignItems: 'center',
+    width: width * 0.8,
+  },
+  secondaryButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontFamily: 'Inter_700Bold',
+    textAlign: 'center',
   },
 }); 

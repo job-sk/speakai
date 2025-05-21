@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Card, Text } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
@@ -66,6 +66,9 @@ export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
         style={styles.keyboardAvoidingView}
       >
         <View style={styles.overlay}>
+          <TouchableOpacity style={styles.backArrow} onPress={() => navigation.navigate('Welcome')}>
+            <MaterialCommunityIcons name="arrow-left" size={32} color="#fff" />
+          </TouchableOpacity>
           <View style={styles.logoContainer}>
             <Image source={logo} style={styles.logo} resizeMode="contain" />
             <Text style={styles.logoText}>speakAI</Text>
@@ -122,17 +125,6 @@ export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
             >
               Login
             </Button>
-            <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>
-                {"Don't have an account? "}
-                <Text
-                  style={styles.signupLink}
-                  onPress={() => navigation.navigate('UserSignup')}
-                >
-                  Sign up
-                </Text>
-              </Text>
-            </View>
           </Card>
         </View>
       </KeyboardAvoidingView>
@@ -212,5 +204,12 @@ const styles = StyleSheet.create({
     marginTop: -12,
     marginBottom: 8,
     marginLeft: 4,
+  },
+  backArrow: {
+    position: 'absolute',
+    top: 18,
+    left: 18,
+    zIndex: 10,
+    padding: 4,
   },
 });
