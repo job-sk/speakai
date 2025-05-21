@@ -247,6 +247,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     color: '#222',
     textAlign: 'center',
+    alignSelf: 'center',
   },
   optionsContainer: {
     width: '100%',

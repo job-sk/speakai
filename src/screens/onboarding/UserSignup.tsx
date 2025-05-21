@@ -189,12 +189,6 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
             >
               Sign Up
             </Button>
-            <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>
-                Already have an account?{' '}
-                <Text style={styles.loginLink} onPress={() => navigation.navigate('UserLoginScreen')}>Login</Text>
-              </Text>
-            </View>
           </Card>
         </View>
       </KeyboardAvoidingView>
@@ -265,18 +259,6 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 8,
     borderRadius: 30,
-  },
-  loginContainer: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  loginText: {
-    color: '#888',
-    fontSize: 15,
-  },
-  loginLink: {
-    color: '#246bfd',
-    fontWeight: 'bold',
   },
   avatarWrapper: {
     position: 'relative',
