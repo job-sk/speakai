@@ -54,8 +54,11 @@ export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
   const handleContinue = () => {
     if (validateForm()) {
       setLoading(true);
-      // Handle form submission here
-      setTimeout(() => setLoading(false), 1000);
+      // Simulate API call
+      setTimeout(() => {
+        setLoading(false);
+        navigation.replace('DashboardScreen');
+      }, 1000);
     }
   };
 
