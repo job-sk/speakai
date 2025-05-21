@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, ImageBackground } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { TextInput, Button, Card, Avatar, Text } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,6 +20,11 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    password: '',
+  });
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -35,94 +40,160 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
     }
   };
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = {
+      name: '',
+      email: '',
+      password: '',
+    };
+
+    if (!name.trim()) {
+      newErrors.name = 'Name is required';
+      isValid = false;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+      isValid = false;
+    } else if (!validateEmail(email)) {
+      newErrors.email = 'Please enter a valid email';
+      isValid = false;
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+      isValid = false;
+    } else if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
   const handleSignup = () => {
-    setLoading(true);
-    // Handle sign up logic here
-    setTimeout(() => setLoading(false), 1000);
+    if (validateForm()) {
+      setLoading(true);
+      console.log({
+        name,
+        email,
+        password,
+        photo,
+      }, 'Signup form data');
+      // Handle sign up logic here
+      setTimeout(() => setLoading(false), 1000);
+    }
   };
 
   return (
     <ImageBackground source={backgroundImage} style={styles.container}>
-      <View style={styles.overlay}>
-        <View style={styles.logoContainer}>
-          <Image source={logo} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.logoText}>speakAI</Text>
-        </View>
-        <Card style={styles.card} elevation={4}>
-          <View style={styles.avatarContainer}>
-            <TouchableOpacity onPress={pickImage}>
-              {photo ? (
-                <View style={styles.avatarWrapper}>
-                  <Avatar.Image size={80} source={{ uri: photo }} />
-                  <TouchableOpacity 
-                    style={styles.removeButton}
-                    onPress={() => setPhoto(null)}
-                  >
-                    <MaterialCommunityIcons name="close-circle" size={24} color="#ff4444" />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <Avatar.Icon size={80} icon="camera" />
-              )}
-            </TouchableOpacity>
-            <Text style={styles.uploadText}>Upload Photo</Text>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.logoContainer}>
+            <Image source={logo} style={styles.logo} resizeMode="contain" />
+            <Text style={styles.logoText}>speakAI</Text>
           </View>
-          <TextInput
-            label="Full Name"
-            value={name}
-            onChangeText={setName}
-            style={styles.input}
-            mode="outlined"
-            left={<TextInput.Icon icon={() => <MaterialCommunityIcons name="account-outline" size={25} color="rgba(0, 0, 0, 0.5)" />} />}
-          />
-          <TextInput
-            label="Email Address"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            mode="outlined"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            left={<TextInput.Icon icon={() => <MaterialCommunityIcons name="email-outline" size={24} color="rgba(0, 0, 0, 0.5)" />} />}
-          />
-          <TextInput
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            style={styles.input}
-            mode="outlined"
-            secureTextEntry
-            left={<TextInput.Icon icon={() => <MaterialCommunityIcons name="lock-outline" size={25} color="rgba(0, 0, 0, 0.5)" />} />}
-            right={
-              <TextInput.Icon 
-                icon={() => (
-                  <MaterialCommunityIcons 
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={24} 
-                    color="rgba(0, 0, 0, 0.5)"
-                  />
+          <Card style={styles.card} elevation={4}>
+            <View style={styles.avatarContainer}>
+              <TouchableOpacity onPress={pickImage}>
+                {photo ? (
+                  <View style={styles.avatarWrapper}>
+                    <Avatar.Image size={80} source={{ uri: photo }} />
+                    <TouchableOpacity 
+                      style={styles.removeButton}
+                      onPress={() => setPhoto(null)}
+                    >
+                      <MaterialCommunityIcons name="close-circle" size={24} color="#ff4444" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <Avatar.Icon size={80} icon="camera" />
                 )}
-                onPress={() => setShowPassword(!showPassword)}
-              />
-            }
-          />
-          <Button
-            mode="contained"
-            style={styles.button}
-            onPress={handleSignup}
-            loading={loading}
-            contentStyle={{ paddingVertical: 8 }}
-          >
-            Sign Up
-          </Button>
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>
-              Already have an account?{' '}
-              <Text style={styles.loginLink} onPress={() => navigation.navigate('UserLoginScreen')}>Login</Text>
-            </Text>
-          </View>
-        </Card>
-      </View>
+              </TouchableOpacity>
+              <Text style={styles.uploadText}>Upload Photo</Text>
+            </View>
+            <TextInput
+              label="Full Name"
+              value={name}
+              onChangeText={(text) => {
+                setName(text);
+                setErrors(prev => ({ ...prev, name: '' }));
+              }}
+              style={styles.input}
+              mode="outlined"
+              left={<TextInput.Icon icon={() => <MaterialCommunityIcons name="account-outline" size={25} color="rgba(0, 0, 0, 0.5)" />} />}
+            />
+            {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
+            
+            <TextInput
+              label="Email Address"
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setErrors(prev => ({ ...prev, email: '' }));
+              }}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              left={<TextInput.Icon icon={() => <MaterialCommunityIcons name="email-outline" size={24} color="rgba(0, 0, 0, 0.5)" />} />}
+            />
+            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+            
+            <TextInput
+              label="Password"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text.replace(/\s/g, ''));
+                setErrors(prev => ({ ...prev, password: '' }));
+              }}
+              style={styles.input}
+              mode="outlined"
+              secureTextEntry={!showPassword}
+              left={<TextInput.Icon icon={() => <MaterialCommunityIcons name="lock-outline" size={25} color="rgba(0, 0, 0, 0.5)" />} />}
+              right={
+                <TextInput.Icon 
+                  icon={() => (
+                    <MaterialCommunityIcons 
+                      name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                      size={24} 
+                      color="rgba(0, 0, 0, 0.5)"
+                    />
+                  )}
+                  onPress={() => setShowPassword(!showPassword)}
+                />
+              }
+            />
+            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+
+            <Button
+              mode="contained"
+              style={styles.button}
+              onPress={handleSignup}
+              loading={loading}
+              contentStyle={{ paddingVertical: 8 }}
+            >
+              Sign Up
+            </Button>
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>
+                Already have an account?{' '}
+                <Text style={styles.loginLink} onPress={() => navigation.navigate('UserLoginScreen')}>Login</Text>
+              </Text>
+            </View>
+          </Card>
+        </View>
+      </KeyboardAvoidingView>
     </ImageBackground>
   );
 };
@@ -132,6 +203,9 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   overlay: {
     flex: 1,
@@ -204,5 +278,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 2,
+  },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 12,
+    marginTop: -12,
+    marginBottom: 8,
+    marginLeft: 4,
   },
 });
