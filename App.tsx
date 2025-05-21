@@ -9,6 +9,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { UserLogin } from 'screens/onboarding/UserLogin';
 import { UserSignup } from 'screens/onboarding/UserSignup';
 import { QuestionnaireScreen } from 'screens/onboarding/QuestionnaireScreen';
+import { DashboardScreen } from 'screens/dashboard/DashboardScreen';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -30,13 +31,13 @@ export default function App() {
                 >
                   <Stack.Screen name="Welcome" component={WelcomeScreen} />
                   {/* <Stack.Screen name="Home" component={HomeScreen} /> */}
-                  {/* <Stack.Screen name="Dashboard" component={DashboardScreen} /> */}
                   {/* <Stack.Screen name="OnboardingQuestionnaire" component={OnboardingQuestionnaireScreen} /> */}
                   {/* <Stack.Screen name="VocabularyTest" component={VocabularyTestScreen} /> */}
                   {/* <Stack.Screen name="VocabularyResult" component={VocabularyResultScreen} /> */}
                   <Stack.Screen name="UserSignup" component={UserSignup} />
                   <Stack.Screen name="UserLoginScreen" component={UserLogin} />
                   <Stack.Screen name="QuestionnaireScreen" component={QuestionnaireScreen} />
+                  <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
                 </Stack.Navigator>
               </NavigationContainer>
             </SafeAreaView>
