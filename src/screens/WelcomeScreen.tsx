@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
@@ -11,7 +11,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useFonts, Inter_700Bold, Inter_400Regular } from '@expo-google-fonts/inter';
 
+const aiTutorIllustration = require('../assets/ai_tutor_illustration.jpg');
 const { width } = Dimensions.get('window');
+
 
 type WelcomeScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
@@ -54,10 +56,41 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
 
   return (
     <LinearGradient
-      colors={['#1a1a1a', '#2d2d2d']}
+      colors={['#707070','#1a1a1a']}
       style={styles.container}
     >
-      <View style={styles.content}>
+      <View style={styles.aiTutorSection}>
+        {/* Glowing background */}
+        <View style={styles.glowOuter}>
+          <View style={styles.glowInner}>
+            {/* Avatar */}
+            <Image
+              source={aiTutorIllustration}
+              style={styles.avatar}
+              resizeMode="contain"
+            />
+            {/* Floating chat bubbles/tags */}
+            <View style={[styles.bubble, styles.bubbleTopLeft]}>
+              <Text style={styles.bubbleText}>Time for a fluency boost! 🚀</Text>
+            </View>
+            <View style={[styles.bubble, styles.bubbleTopRight]}>
+              <Text style={styles.bubbleText}>📈 Pitch Practice</Text>
+            </View>
+            <View style={[styles.bubble, styles.bubbleBottomLeft]}>
+              <Text style={styles.bubbleText}>how did your meeting go? 👀</Text>
+            </View>
+            <View style={[styles.bubble, styles.bubbleBottomRight]}>
+              <Text style={styles.bubbleText}>FREE TALK 💬</Text>
+            </View>
+          </View>
+        </View>
+        {/* Heading and subtitle */}
+        <Text style={styles.aiTutorHeading}>Practice with AI tutor</Text>
+        <Text style={styles.aiTutorDescription}>
+          Speaking practice on real-life topics: job interviews, meetings, sales, pitch calls—whatever you need
+        </Text>
+      </View>
+      <View>
         <Animated.Text style={[styles.title, titleStyle]}>
           SpeakAI
         </Animated.Text>
@@ -69,7 +102,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
         <Animated.View style={[styles.buttonContainer, buttonStyle]}>
           <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate('Dashboard')}
+            onPress={() => navigation.navigate('UserLoginScreen')}
           >
             <Text style={styles.buttonText}>Get Started</Text>
           </TouchableOpacity>
@@ -82,12 +115,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  content: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 16,
   },
   title: {
     fontFamily: 'Inter_700Bold',
@@ -129,5 +159,82 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter_700Bold',
     textAlign: 'center',
+  },
+  aiTutorSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glowOuter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  glowInner: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(0,122,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: '#222',
+    backgroundColor: '#222',
+  },
+  bubble: {
+    position: 'absolute',
+    backgroundColor: '#23243a',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    maxWidth: 130,
+    zIndex: 2,
+  },
+  bubbleText: {
+    color: '#fff',
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+  },
+  bubbleTopLeft: {
+    top: 10,
+    left: -60,
+  },
+  bubbleTopRight: {
+    top: 10,
+    right: -40,
+  },
+  bubbleBottomLeft: {
+    bottom: 10,
+    left: -70,
+  },
+  bubbleBottomRight: {
+    bottom: 10,
+    right: -50,
+  },
+  timer: {
+    color: '#a0a0a0',
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  aiTutorHeading: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 24,
+    color: '#ffffff',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  aiTutorDescription: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
+    color: '#a0a0a0',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 }); 
