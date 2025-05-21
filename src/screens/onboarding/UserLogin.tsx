@@ -57,7 +57,7 @@ export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
       // Simulate API call
       setTimeout(() => {
         setLoading(false);
-        navigation.replace('DashboardScreen');
+        navigation.navigate('DashboardScreen');
       }, 1000);
     }
   };
