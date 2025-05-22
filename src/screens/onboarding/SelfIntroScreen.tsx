@@ -133,7 +133,9 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
         setIsPlaying(false);
       } else {
         const status = await sound.getStatusAsync();
-        if (status.isLoaded && status.didJustFinish) {
+        // Reset position if the sound has finished or is at the end
+        if (status.isLoaded && status.durationMillis && 
+            (status.didJustFinish || status.positionMillis >= status.durationMillis)) {
           await sound.setPositionAsync(0);
         }
         await sound.playAsync();
