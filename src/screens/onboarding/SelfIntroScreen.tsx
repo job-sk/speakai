@@ -115,7 +115,7 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
       if (uri) {
         const { sound: newSound } = await Audio.Sound.createAsync(
           { uri },
-          { shouldPlay: false }
+          { shouldPlay: false, progressUpdateIntervalMillis: 100 }
         );
         setSound(newSound);
       }
@@ -132,10 +132,13 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
         await sound.pauseAsync();
         setIsPlaying(false);
       } else {
+        const status = await sound.getStatusAsync();
+        if (status.isLoaded && status.didJustFinish) {
+          await sound.setPositionAsync(0);
+        }
         await sound.playAsync();
         setIsPlaying(true);
 
-        // Add playback status listener
         sound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded) {
             if (status.didJustFinish) {
@@ -153,6 +156,7 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
   const resetRecording = async () => {
     if (sound) {
       try {
+        await sound.stopAsync();
         await sound.unloadAsync();
       } catch (error) {
         console.error('Failed to unload sound:', error);
