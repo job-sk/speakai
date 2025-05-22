@@ -47,6 +47,12 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
 
   const startRecording = async () => {
     try {
+      // Clean up existing recording if any
+      if (sound) {
+        await sound.unloadAsync();
+        setSound(null);
+      }
+      
       await Audio.requestPermissionsAsync();
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
@@ -101,13 +107,20 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
     pulseAnim.value = withSpring(1);
     waveAnim.value = withSpring(0);
 
-    await recording.stopAndUnloadAsync();
-    const uri = recording.getURI();
-    setRecording(null);
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null);
 
-    if (uri) {
-      const { sound: newSound } = await Audio.Sound.createAsync({ uri });
-      setSound(newSound);
+      if (uri) {
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri },
+          { shouldPlay: false }
+        );
+        setSound(newSound);
+      }
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
     }
   };
 
@@ -115,17 +128,40 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
     if (!sound) return;
 
     try {
-      setIsPlaying(true);
-      await sound.playAsync();
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && !status.isPlaying) {
-          setIsPlaying(false);
-        }
-      });
+      if (isPlaying) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } else {
+        await sound.setPositionAsync(0); // Reset to start
+        await sound.playAsync();
+        setIsPlaying(true);
+
+        // Add playback status listener
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            if (status.didJustFinish) {
+              setIsPlaying(false);
+            }
+          }
+        });
+      }
     } catch (err) {
-      console.error('Failed to play sound', err);
+      console.error('Failed to play/pause sound', err);
       setIsPlaying(false);
     }
+  };
+
+  const resetRecording = async () => {
+    if (sound) {
+      try {
+        await sound.unloadAsync();
+      } catch (error) {
+        console.error('Failed to unload sound:', error);
+      }
+    }
+    setSound(null);
+    setRecordingDuration(0);
+    setIsPlaying(false);
   };
 
   const handleNext = async () => {
@@ -194,7 +230,6 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             style={styles.controlButton}
             onPress={playSound}
-            disabled={isPlaying}
           >
             <MaterialCommunityIcons
               name={isPlaying ? "pause" : "play"}
@@ -204,10 +239,7 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.controlButton}
-            onPress={() => {
-              setSound(null);
-              setRecordingDuration(0);
-            }}
+            onPress={resetRecording}
           >
             <MaterialCommunityIcons name="refresh" size={24} color="#fff" />
           </TouchableOpacity>
