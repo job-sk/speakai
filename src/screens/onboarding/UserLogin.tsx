@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const logo = require('../../assets/ai_tutor_illustration.jpg');
+const logo = require('../../assets/avatar-images/ai_tutor_illustration.jpg');
 const backgroundImage = require('../../assets/background-images/signin-background.jpg');
 
 type LoginScreenProps = {

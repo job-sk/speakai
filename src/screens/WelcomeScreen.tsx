@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useFonts, Inter_700Bold, Inter_400Regular } from '@expo-google-fonts/inter';
 
-const aiTutorIllustration = require('../assets/ai_tutor_illustration.jpg');
+const aiTutorIllustration = require('../assets/avatar-images/ai_tutor_illustration.jpg');
 const { width } = Dimensions.get('window');
 
 
@@ -56,7 +56,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation }) => {
 
   return (
     <LinearGradient
-      colors={['#707070','#1a1a1a']}
+      colors={['#1a1a1a','#707070']}
       style={styles.container}
     >
       <View style={styles.aiTutorSection}>

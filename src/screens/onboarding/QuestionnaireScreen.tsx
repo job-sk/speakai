@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { RootStackParamList } from 'navigation/types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-const logo = require('../../assets/ai_tutor_illustration.jpg');
+const logo = require('../../assets/avatar-images/onboarding-girl-img.png');
 const backgroundImage = require('../../assets/background-images/signin-background.jpg');
 const { width } = Dimensions.get('window');
 
