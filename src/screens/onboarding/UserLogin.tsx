@@ -57,7 +57,7 @@ export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
       // Simulate API call
       setTimeout(() => {
         setLoading(false);
-        navigation.navigate('SelfIntroScreen');
+        // navigation.navigate('SelfIntroScreen');
       }, 1000);
     }
   };

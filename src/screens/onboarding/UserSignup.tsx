@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Keyboard } from 'react-native';
 import { TextInput, Button, Card, Avatar, Text } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -81,14 +81,18 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
   const handleSignup = () => {
     if (validateForm()) {
       setLoading(true);
+      Keyboard.dismiss();
       console.log({
         name,
         email,
         password,
         photo,
       }, 'Signup form data');
-      // Handle sign up logic here
-      setTimeout(() => setLoading(false), 1000);
+      
+      setTimeout(() => {
+        setLoading(false)
+        navigation.navigate('SelfIntroScreen');
+      }, 2500);
     }
   };
 
