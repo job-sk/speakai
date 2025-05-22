@@ -132,7 +132,6 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
         await sound.pauseAsync();
         setIsPlaying(false);
       } else {
-        await sound.setPositionAsync(0); // Reset to start
         await sound.playAsync();
         setIsPlaying(true);
 
