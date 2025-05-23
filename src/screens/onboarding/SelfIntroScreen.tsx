@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert, BackHandler } from 'react-native';
 import { Audio } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { 
@@ -36,10 +36,44 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [hasAnalyzedVoice, setHasAnalyzedVoice] = useState(false);
   
   const durationTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulseAnim = useSharedValue(1);
   const waveAnim = useSharedValue(0);
+
+  // Check if voice has been analyzed
+  useEffect(() => {
+    const checkVoiceAnalysis = async () => {
+      const analyzed = await AsyncStorage.getItem('hasAnalyzedVoice');
+      setHasAnalyzedVoice(analyzed === 'true');
+    };
+    checkVoiceAnalysis();
+  }, []);
+
+  // Handle back button press
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (!hasAnalyzedVoice) {
+        Alert.alert(
+          'Cannot Go Back',
+          'Please complete your voice analysis before proceeding.',
+          [{ text: 'OK' }]
+        );
+        return true; // Prevent default behavior
+      }
+      return false; // Allow default behavior
+    });
+
+    return () => backHandler.remove();
+  }, [hasAnalyzedVoice]);
+
+  // Disable navigation gestures
+  useEffect(() => {
+    navigation.setOptions({
+      gestureEnabled: false
+    });
+  }, [navigation]);
 
   useEffect(() => {
     return () => {
@@ -225,6 +259,7 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
       
       setAnalysisResult(analysisResult);
       setShowAlert(true);
+      setHasAnalyzedVoice(true);
 
       // Set the flag that voice has been analyzed
       await AsyncStorage.setItem('hasAnalyzedVoice', 'true');
