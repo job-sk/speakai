@@ -18,10 +18,18 @@ const languageOptions = [
   'Other',
 ];
 const englishLevels = [
-  "I'm new to English",
-  'I know some basic words',
-  'I can have basic conversations',
-  'I can discuss most topics in detail',
+  {
+    label: "I'm new to English",
+    value: 'Beginner'
+  },
+  {
+    label: 'I know some basic words',
+    value: 'Intermediate'
+  },
+  {
+    label: 'I can have basic conversations',
+    value: 'Upper Intermediate'
+  }
 ];
 
 type LoginScreenProps = {
@@ -65,7 +73,17 @@ export const QuestionnaireScreen: React.FC<LoginScreenProps> = ({ navigation }) 
       return;
     }
     if (step < totalSteps - 1) setStep(step + 1);
-    else navigation.navigate('UserSignup');
+    else {
+      // Prepare the questionnaire data
+      const questionnaireData = {
+        age: parseInt(age),
+        nativeLanguage: language,
+        englishProficiency: englishLevel
+      };
+      
+      // Navigate to UserSignup with the data
+      navigation.navigate('UserSignup', { questionnaireData });
+    }
   };
   
   const handleBack = () => {
@@ -109,11 +127,11 @@ export const QuestionnaireScreen: React.FC<LoginScreenProps> = ({ navigation }) 
       <View style={styles.optionsContainer}>
         {englishLevels.map(opt => (
           <TouchableOpacity
-            key={opt}
-            style={[styles.option, englishLevel === opt && styles.optionSelected]}
-            onPress={() => setEnglishLevel(opt)}
+            key={opt.value}
+            style={[styles.option, englishLevel === opt.value && styles.optionSelected]}
+            onPress={() => setEnglishLevel(opt.value)}
           >
-            <Text style={[styles.optionText, englishLevel === opt && styles.optionTextSelected]}>{opt}</Text>
+            <Text style={[styles.optionText, englishLevel === opt.value && styles.optionTextSelected]}>{opt.label}</Text>
           </TouchableOpacity>
         ))}
       </View>

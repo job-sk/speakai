@@ -1,35 +1,43 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Keyboard, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Keyboard, Alert, Dimensions } from 'react-native';
 import { TextInput, Button, Card, Avatar, Text } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { RouteProp } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { authAPI } from '../../services/api';
 import { AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
 
-const logo = require('../../assets/avatar-images/ai_tutor_illustration.jpg');
+const logo = require('../../assets/avatar-images/onboarding-girl-img.png');
 const backgroundImage = require('../../assets/background-images/signin-background.jpg');
+const { width } = Dimensions.get('window');
 
-type SignupScreenProps = {
+type UserSignupScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'UserSignup'>;
+  route: RouteProp<RootStackParamList, 'UserSignup'>;
 };
 
-export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
+export const UserSignup: React.FC<UserSignupScreenProps> = ({ navigation, route }) => {
   const { checkAuth } = useAuth();
   const [profilePhoto, setPhoto] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
+
+  // Get questionnaire data from route params
+  const questionnaireData = route.params?.questionnaireData;
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -56,6 +64,7 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
       name: '',
       email: '',
       password: '',
+      confirmPassword: '',
     };
 
     if (!name.trim()) {
@@ -79,6 +88,14 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
       isValid = false;
     }
 
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Confirm Password is required';
+      isValid = false;
+    } else if (confirmPassword !== password) {
+      newErrors.confirmPassword = 'Passwords do not match';
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid;
   };
@@ -93,7 +110,8 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
       const userData = {
         name,
         email,
-        password
+        password,
+        ...questionnaireData // Include questionnaire data in the payload
       };
       // Todo
       // if (photo) {
@@ -104,15 +122,14 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
       //   } as any;
       //   formData.append('photo', photoData);
       // }
-      console.log(userData,"formData");
+      console.log("Signup payload>>",userData);
       
       const response = await authAPI.register(userData);
       
-      const { user, tokens } = response.data;
+      const { user, token } = response.data;
       
-      // Store tokens and user data
-      await AsyncStorage.setItem('accessToken', tokens.accessToken);
-      await AsyncStorage.setItem('refreshToken', tokens.refreshToken);
+      // Store token and user data
+      await AsyncStorage.setItem('accessToken', token);
       await AsyncStorage.setItem('userData', JSON.stringify(user));
       
       // Update auth state
@@ -220,6 +237,32 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
               }
             />
             {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+
+            <TextInput
+              label="Confirm Password"
+              value={confirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text.replace(/\s/g, ''));
+                setErrors(prev => ({ ...prev, confirmPassword: '' }));
+              }}
+              style={styles.input}
+              mode="outlined"
+              secureTextEntry={!showPassword}
+              left={<TextInput.Icon icon={() => <MaterialCommunityIcons name="lock-outline" size={25} color="rgba(0, 0, 0, 0.5)" />} />}
+              right={
+                <TextInput.Icon 
+                  icon={() => (
+                    <MaterialCommunityIcons 
+                      name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                      size={24} 
+                      color="rgba(0, 0, 0, 0.5)"
+                    />
+                  )}
+                  onPress={() => setShowPassword(!showPassword)}
+                />
+              }
+            />
+            {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
 
             <Button
               mode="contained"

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert, BackHandler, ScrollView } from 'react-native';
 import { Audio } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { 
@@ -232,6 +232,16 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
   const onAnalyzeClick = async () => {
     if (!recordingURI) return;
 
+    // Check if recording duration is at least 30 seconds
+    // if (recordingDuration < 30) {
+    //   Alert.alert(
+    //     'Recording Too Short',
+    //     'Please record at least 30 seconds of speech for accurate analysis.',
+    //     [{ text: 'OK' }]
+    //   );
+    //   return;
+    // }
+
     try {
       // Check network and server first
       await checkNetworkAndServer();
@@ -254,20 +264,130 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
 
       console.log('FormData:', JSON.stringify(formData, null, 2));
       
-      const analysisResult = await authAPI.analyzeSpeech(formData);
-      console.log('Analysis result:', analysisResult);
+      // const response = await authAPI.analyzeSpeech(formData);
+      const response = {"data":{
+        "transcription": "Hello. Nice to meet you. I am Job. My name is Job. I am from India. I am a software developer. I am a front-end developer. My age is 26. I love to play football and video games. And also I am a bodybuilder.",
+        "analysis": "Grammar: 9/10. Speaking Accuracy: 9/10. Your sentence construction and grammar usage are good. Keep practicing your English to improve further. Your vocabulary is appropriate and you express your thoughts clearly. Well done!",
+        "metrics": {
+            "segments": [
+                {
+                    "id": 0,
+                    "seek": 0,
+                    "start": 0,
+                    "end": 13,
+                    "text": " Hello. Nice to meet you. I am Job. My name is Job. I am from India. I am a software developer.",
+                    "tokens": [
+                        50364,
+                        2425,
+                        13,
+                        5490,
+                        281,
+                        1677,
+                        291,
+                        13,
+                        286,
+                        669,
+                        18602,
+                        13,
+                        1222,
+                        1315,
+                        307,
+                        18602,
+                        13,
+                        286,
+                        669,
+                        490,
+                        5282,
+                        13,
+                        286,
+                        669,
+                        257,
+                        4722,
+                        10754,
+                        13,
+                        51014
+                    ],
+                    "temperature": 0,
+                    "avg_logprob": -0.3535516858100891,
+                    "compression_ratio": 1.3937008380889893,
+                    "no_speech_prob": 0.746699869632721
+                },
+                {
+                    "id": 1,
+                    "seek": 0,
+                    "start": 13,
+                    "end": 27,
+                    "text": " I am a front-end developer. My age is 26. I love to play football and video games.",
+                    "tokens": [
+                        51014,
+                        286,
+                        669,
+                        257,
+                        1868,
+                        12,
+                        521,
+                        10754,
+                        13,
+                        1222,
+                        3205,
+                        307,
+                        7551,
+                        13,
+                        286,
+                        959,
+                        281,
+                        862,
+                        7346,
+                        293,
+                        960,
+                        2813,
+                        13,
+                        51714
+                    ],
+                    "temperature": 0,
+                    "avg_logprob": -0.3535516858100891,
+                    "compression_ratio": 1.3937008380889893,
+                    "no_speech_prob": 0.746699869632721
+                },
+                {
+                    "id": 2,
+                    "seek": 2700,
+                    "start": 27,
+                    "end": 30,
+                    "text": " And also I am a bodybuilder.",
+                    "tokens": [
+                        50364,
+                        400,
+                        611,
+                        286,
+                        669,
+                        257,
+                        1772,
+                        11516,
+                        260,
+                        13,
+                        50514
+                    ],
+                    "temperature": 0,
+                    "avg_logprob": -0.32374075055122375,
+                    "compression_ratio": 0.7777777910232544,
+                    "no_speech_prob": 0.24947382509708405
+                }
+            ],
+            "duration": 36.470001220703125
+        }}
+    }
+      console.log('Analysis result:', response);
+      console.log("================================");
       
-      setAnalysisResult(analysisResult);
+      console.log('Analysis result:', response?.data);
+      
+      setAnalysisResult(response.data);
       setShowAlert(true);
       setHasAnalyzedVoice(true);
 
       // Set the flag that voice has been analyzed
       await AsyncStorage.setItem('hasAnalyzedVoice', 'true');
-
-      // Navigate after 10 seconds
-      setTimeout(() => {
-        navigation.navigate('MainTabs');
-      }, 10000);
 
     } catch (err: any) {
       let errorMessage = 'Failed to analyze your speech. Please try again.';
@@ -286,7 +406,7 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
           }
         });
 
-       if (err.response?.status === 413) {
+        if (err.response?.status === 413) {
           errorMessage = 'The audio file is too large. Please record a shorter message.';
         } else if (err.response?.status === 415) {
           errorMessage = 'The audio format is not supported. Please try again.';
@@ -314,84 +434,132 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Please provide a 1 minute self introduction</Text>
-      <Text style={styles.subtitle}>We'll analyze your language proficiency</Text>
+      {!analysisResult ? (
+        <>
+          <Text style={styles.title}>Take the First Step</Text>
+          <Text style={styles.subtitle}>Speak for 1 minute on anything you like, We will analyze your speaking and help you improve</Text>
 
-      <View style={styles.recordingContainer}>
-        <Animated.View style={[styles.recordingCircle, pulseStyle]}>
-          <Animated.View style={[styles.recordingWave, waveStyle]} />
-          <TouchableOpacity
-            style={styles.recordButton}
-            onPress={isRecording ? stopRecording : startRecording}
-          >
-            <MaterialCommunityIcons
-              name={isRecording ? "stop" : "microphone"}
-              size={32}
-              color="#fff"
-            />
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-
-      <Text style={styles.timer}>
-        {Math.floor(recordingDuration / 60)}:
-        {String(recordingDuration % 60).padStart(2, '0')}
-      </Text>
-
-      {sound && !isRecording && (
-        <View style={styles.controls}>
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={playSound}
-          >
-            <MaterialCommunityIcons
-              name={isPlaying ? "pause" : "play"}
-              size={24}
-              color="#fff"
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={resetRecording}
-          >
-            <MaterialCommunityIcons name="refresh" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {sound && !isRecording && (
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={onAnalyzeClick}
-        >
-          <Text style={styles.nextButtonText}>Analyze Recording</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Custom Alert */}
-      {showAlert && analysisResult && (
-        <View style={styles.alertOverlay}>
-          <View style={styles.alertBox}>
-            <Text style={styles.alertTitle}>Analysis Complete!</Text>
-            
-            <View style={styles.analysisSection}>
-              <Text style={styles.sectionTitle}>Transcription</Text>
-              <Text style={styles.transcriptionText}>{analysisResult.transcription}</Text>
-            </View>
-
-            <View style={styles.analysisSection}>
-              <Text style={styles.sectionTitle}>Analysis</Text>
-              <Text style={styles.analysisText}>{analysisResult.analysis}</Text>
-            </View>
-
-            <View style={styles.metricsSection}>
-              <Text style={styles.sectionTitle}>Metrics</Text>
-              <Text style={styles.metricText}>Language: {analysisResult.metrics.language}</Text>
-              <Text style={styles.metricText}>Segments: {analysisResult.metrics.segments.length}</Text>
-            </View>
-
-            <Text style={styles.redirecting}>Redirecting to dashboard...</Text>
+          <View style={styles.recordingContainer}>
+            <Animated.View style={[styles.recordingCircle, pulseStyle]}>
+              <Animated.View style={[styles.recordingWave, waveStyle]} />
+              <TouchableOpacity
+                style={styles.recordButton}
+                onPress={isRecording ? stopRecording : startRecording}
+              >
+                <MaterialCommunityIcons
+                  name={isRecording ? "stop" : "microphone"}
+                  size={32}
+                  color="#fff"
+                />
+              </TouchableOpacity>
+            </Animated.View>
           </View>
+
+          <Text style={styles.timer}>
+            {Math.floor(recordingDuration / 60)}:
+            {String(recordingDuration % 60).padStart(2, '0')}
+          </Text>
+
+          {sound && !isRecording && (
+            <View style={styles.controls}>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={playSound}
+              >
+                <MaterialCommunityIcons
+                  name={isPlaying ? "pause" : "play"}
+                  size={24}
+                  color="#fff"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={resetRecording}
+              >
+                <MaterialCommunityIcons name="refresh" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {sound && !isRecording && (
+            <TouchableOpacity
+              style={styles.nextButton}
+              onPress={onAnalyzeClick}
+            >
+              <Text style={styles.nextButtonText}>Analyze Recording</Text>
+            </TouchableOpacity>
+          )}
+        </>
+      ) : (
+        <View style={styles.resultsContainer}>
+          <View style={styles.resultsHeader}>
+            <MaterialCommunityIcons name="check-circle" size={32} color="#4CAF50" />
+            <Text style={styles.resultsTitle}>Analysis Complete!</Text>
+          </View>
+          
+          <ScrollView 
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <View style={styles.resultsCard}>
+              <View style={styles.scoresContainer}>
+                <View style={styles.scoreItem}>
+                  <MaterialCommunityIcons name="pencil" size={24} color="#246bfd" />
+                  <Text style={styles.scoreValue}>{analysisResult.analysis.split('.')[0].split(': ')[1]}</Text>
+                  <Text style={styles.scoreLabel}>Grammar</Text>
+                </View>
+                <View style={styles.scoreDivider} />
+                <View style={styles.scoreItem}>
+                  <MaterialCommunityIcons name="microphone" size={24} color="#246bfd" />
+                  <Text style={styles.scoreValue}>{analysisResult.analysis.split('.')[1].split(': ')[1]}</Text>
+                  <Text style={styles.scoreLabel}>Speaking</Text>
+                </View>
+              </View>
+
+              <View style={styles.transcriptionSection}>
+                <View style={styles.sectionHeader}>
+                  <MaterialCommunityIcons name="text-box" size={20} color="#246bfd" />
+                  <Text style={styles.sectionTitle}>Transcription</Text>
+                </View>
+                <Text style={styles.transcriptionText}>{analysisResult.transcription}</Text>
+              </View>
+
+              <View style={styles.feedbackSection}>
+                <View style={styles.sectionHeader}>
+                  <MaterialCommunityIcons name="lightbulb" size={20} color="#246bfd" />
+                  <Text style={styles.sectionTitle}>Feedback</Text>
+                </View>
+                <Text style={styles.feedbackText}>
+                  {analysisResult.analysis.split('. ').slice(2).join('. ')}
+                </Text>
+              </View>
+
+              <View style={styles.metricsSection}>
+                <View style={styles.sectionHeader}>
+                  <MaterialCommunityIcons name="chart-bar" size={20} color="#246bfd" />
+                  <Text style={styles.sectionTitle}>Metrics</Text>
+                </View>
+                <View style={styles.metricsGrid}>
+                  <View style={styles.metricItem}>
+                    <Text style={styles.metricValue}>{analysisResult.metrics?.segments?.length || 0}</Text>
+                    <Text style={styles.metricLabel}>Segments</Text>
+                  </View>
+                  <View style={styles.metricItem}>
+                    <Text style={styles.metricValue}>{Math.round(analysisResult.metrics?.duration || 0)}s</Text>
+                    <Text style={styles.metricLabel}>Duration</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+
+          <TouchableOpacity
+            style={styles.continueButton}
+            onPress={() => navigation.navigate('MainTabs')}
+          >
+            <Text style={styles.continueButtonText}>Continue</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -480,66 +648,132 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  alertOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
+  resultsContainer: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 25,
+    paddingBottom: 20,
+  },
+  resultsHeader: {
     alignItems: 'center',
-    zIndex: 1000,
+    marginBottom: 24,
+    paddingHorizontal: 20,
   },
-  alertBox: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 20,
-    padding: 24,
-    width: '90%',
-    maxWidth: 400,
-  },
-  alertTitle: {
+  resultsTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 20,
-    textAlign: 'center',
+    marginTop: 12,
   },
-  analysisSection: {
+  resultsCard: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 20,
+  },
+  scoresContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  scoreItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  scoreDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#444',
+  },
+  scoreValue: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginVertical: 8,
+  },
+  scoreLabel: {
+    color: '#888',
+    fontSize: 14,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#fff',
-    marginBottom: 8,
+    marginLeft: 8,
+  },
+  transcriptionSection: {
+    marginBottom: 24,
   },
   transcriptionText: {
     color: '#ccc',
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 12,
-  },
-  analysisText: {
-    color: '#ccc',
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  metricsSection: {
     backgroundColor: '#333',
     padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
   },
-  metricText: {
+  feedbackSection: {
+    marginBottom: 24,
+  },
+  feedbackText: {
+    color: '#ccc',
+    fontSize: 16,
+    lineHeight: 24,
+    backgroundColor: '#333',
+    padding: 16,
+    borderRadius: 12,
+  },
+  metricsSection: {
+    marginBottom: 16,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#333',
+    padding: 16,
+    borderRadius: 12,
+  },
+  metricItem: {
+    alignItems: 'center',
+  },
+  metricValue: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 24,
+    fontWeight: 'bold',
     marginBottom: 4,
   },
-  redirecting: {
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 16,
+  metricLabel: {
+    color: '#888',
     fontSize: 14,
+  },
+  continueButton: {
+    backgroundColor: '#246bfd',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  continueButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
