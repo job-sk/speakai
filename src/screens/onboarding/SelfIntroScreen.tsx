@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { 
@@ -14,6 +14,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI } from '../../services/api';
+import { AxiosError } from 'axios';
+import { API_BASE_URL } from '@env';
+import NetInfo from '@react-native-community/netinfo';
+// import * as mime from 'react-native-mime-types';
 
 const { width } = Dimensions.get('window');
 
@@ -26,11 +32,12 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [recordingURI, setRecordingURI] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   
-  const durationTimer = useRef<NodeJS.Timeout | null>(null);
+  const durationTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulseAnim = useSharedValue(1);
   const waveAnim = useSharedValue(0);
 
@@ -110,6 +117,7 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
     try {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
+      setRecordingURI(uri);
       setRecording(null);
 
       if (uri) {
@@ -169,29 +177,94 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
     setIsPlaying(false);
   };
 
-  const handleNext = async () => {
-    if (!sound) return;
+  const checkNetworkAndServer = async () => {
+    try {
+      const netInfo = await NetInfo.fetch();
+      
+      if (!netInfo.isConnected) {
+        throw new Error('No internet connection');
+      }
+
+      // Try to ping the server
+      const response = await fetch(`${API_BASE_URL}/health`);
+      if (!response.ok) {
+        throw new Error('Server is not responding');
+      }
+    } catch (error: any) {
+      throw new Error(`Network check failed: ${error.message}`);
+    }
+  };
+
+  const onAnalyzeClick = async () => {
+    if (!recordingURI) return;
 
     try {
-      // Simulate API call with mock data
-      const mockApiResponse = {
-        fluency: 85,
-        pronunciation: 78,
-        vocabulary: 92,
-        overall: 85,
-        feedback: "Great clarity and natural flow. Some minor pronunciation improvements needed."
-      };
+      // Check network and server first
+      await checkNetworkAndServer();
+      // Call the speech analysis service
+      const formData = new FormData();
+      const filename = recordingURI.split('/').pop()!;
+      const mimeType = 'audio/mp4';
 
-      setAnalysisResult(mockApiResponse);
+      // Format the file URI properly for the server
+      // const fileUri = Platform.OS === 'android' 
+      //   ? `file://${recordingURI}`
+      //   : recordingURI;
+
+      // Append the file with proper metadata
+      formData.append('audio', {
+        uri: recordingURI,
+        type: mimeType,
+        name: filename,
+      } as any);
+
+      console.log('FormData:', JSON.stringify(formData, null, 2));
+      
+      const analysisResult = await authAPI.analyzeSpeech(formData);
+      console.log('Analysis result:', analysisResult);
+      
+      setAnalysisResult(analysisResult);
       setShowAlert(true);
 
-      // Navigate after 3 seconds
-      setTimeout(() => {
-        navigation.navigate('DashboardScreen');
-      }, 3000);
+      // Set the flag that voice has been analyzed
+      await AsyncStorage.setItem('hasAnalyzedVoice', 'true');
 
-    } catch (err) {
-      console.error('Failed to analyze recording', err);
+      // Navigate after 10 seconds
+      setTimeout(() => {
+        navigation.navigate('MainTabs');
+      }, 10000);
+
+    } catch (err: any) {
+      let errorMessage = 'Failed to analyze your speech. Please try again.';
+
+      if (err instanceof AxiosError) {
+        console.error('Axios error details:', {
+          message: err.message,
+          code: err.code,
+          response: err.response?.data,
+          request: err.request,
+          config: {
+            url: err.config?.url,
+            method: err.config?.method,
+            headers: err.config?.headers,
+            baseURL: err.config?.baseURL,
+          }
+        });
+
+       if (err.response?.status === 413) {
+          errorMessage = 'The audio file is too large. Please record a shorter message.';
+        } else if (err.response?.status === 415) {
+          errorMessage = 'The audio format is not supported. Please try again.';
+        }
+      } else if (err.message?.includes('Network check failed')) {
+        errorMessage = err.message;
+      }
+
+      Alert.alert(
+        'Analysis Failed',
+        errorMessage,
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -254,7 +327,7 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
       {sound && !isRecording && (
         <TouchableOpacity
           style={styles.nextButton}
-          onPress={handleNext}
+          onPress={onAnalyzeClick}
         >
           <Text style={styles.nextButtonText}>Analyze Recording</Text>
         </TouchableOpacity>
@@ -266,22 +339,22 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.alertBox}>
             <Text style={styles.alertTitle}>Analysis Complete!</Text>
             
-            <View style={styles.scoreContainer}>
-              <View style={styles.scoreItem}>
-                <Text style={styles.scoreLabel}>Overall</Text>
-                <Text style={styles.scoreValue}>{analysisResult.overall}%</Text>
-              </View>
-              <View style={styles.scoreItem}>
-                <Text style={styles.scoreLabel}>Fluency</Text>
-                <Text style={styles.scoreValue}>{analysisResult.fluency}%</Text>
-              </View>
-              <View style={styles.scoreItem}>
-                <Text style={styles.scoreLabel}>Pronunciation</Text>
-                <Text style={styles.scoreValue}>{analysisResult.pronunciation}%</Text>
-              </View>
+            <View style={styles.analysisSection}>
+              <Text style={styles.sectionTitle}>Transcription</Text>
+              <Text style={styles.transcriptionText}>{analysisResult.transcription}</Text>
             </View>
 
-            <Text style={styles.feedback}>{analysisResult.feedback}</Text>
+            <View style={styles.analysisSection}>
+              <Text style={styles.sectionTitle}>Analysis</Text>
+              <Text style={styles.analysisText}>{analysisResult.analysis}</Text>
+            </View>
+
+            <View style={styles.metricsSection}>
+              <Text style={styles.sectionTitle}>Metrics</Text>
+              <Text style={styles.metricText}>Language: {analysisResult.metrics.language}</Text>
+              <Text style={styles.metricText}>Segments: {analysisResult.metrics.segments.length}</Text>
+            </View>
+
             <Text style={styles.redirecting}>Redirecting to dashboard...</Text>
           </View>
         </View>
@@ -378,52 +451,60 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
   },
   alertBox: {
-    backgroundColor: '#23243a',
+    backgroundColor: '#2a2a2a',
     borderRadius: 20,
     padding: 24,
-    width: width * 0.9,
-    alignItems: 'center',
+    width: '90%',
+    maxWidth: 400,
   },
   alertTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 20,
-  },
-  scoreContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: 20,
-  },
-  scoreItem: {
-    alignItems: 'center',
-  },
-  scoreLabel: {
-    color: '#888',
-    fontSize: 14,
-    marginBottom: 5,
-  },
-  scoreValue: {
-    color: '#246bfd',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  feedback: {
-    color: '#fff',
-    fontSize: 16,
     textAlign: 'center',
+  },
+  analysisSection: {
     marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  transcriptionText: {
+    color: '#ccc',
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 12,
+  },
+  analysisText: {
+    color: '#ccc',
+    fontSize: 16,
     lineHeight: 24,
   },
-  redirecting: {
-    color: '#888',
+  metricsSection: {
+    backgroundColor: '#333',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  metricText: {
+    color: '#fff',
     fontSize: 14,
-    fontStyle: 'italic',
+    marginBottom: 4,
+  },
+  redirecting: {
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 14,
   },
 });

@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Keyboard } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Keyboard, Alert } from 'react-native';
 import { TextInput, Button, Card, Avatar, Text } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { authAPI } from '../../services/api';
+import { AxiosError } from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../../context/AuthContext';
 
 const logo = require('../../assets/avatar-images/ai_tutor_illustration.jpg');
 const backgroundImage = require('../../assets/background-images/signin-background.jpg');
@@ -14,7 +18,8 @@ type SignupScreenProps = {
 };
 
 export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
-  const [photo, setPhoto] = useState<string | null>(null);
+  const { checkAuth } = useAuth();
+  const [profilePhoto, setPhoto] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -78,21 +83,53 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
     return isValid;
   };
 
-  const handleSignup = () => {
-    if (validateForm()) {
+  const handleSignup = async () => {
+    if (!validateForm()) return;
+    
+    try {
       setLoading(true);
       Keyboard.dismiss();
-      console.log({
+
+      const userData = {
         name,
         email,
-        password,
-        photo,
-      }, 'Signup form data');
+        password
+      };
+      // Todo
+      // if (photo) {
+      //   const photoData = {
+      //     uri: photo,
+      //     type: 'image/jpeg',
+      //     name: 'photo.jpg'
+      //   } as any;
+      //   formData.append('photo', photoData);
+      // }
+      console.log(userData,"formData");
       
-      setTimeout(() => {
-        setLoading(false)
-        navigation.navigate('SelfIntroScreen');
-      }, 2500);
+      const response = await authAPI.register(userData);
+      
+      const { user, tokens } = response.data;
+      
+      // Store tokens and user data
+      await AsyncStorage.setItem('accessToken', tokens.accessToken);
+      await AsyncStorage.setItem('refreshToken', tokens.refreshToken);
+      await AsyncStorage.setItem('userData', JSON.stringify(user));
+      
+      // Update auth state
+      await checkAuth();
+      
+      // Replace current screen with MainTabs
+      navigation.replace('MainTabs');
+      
+    } catch (error: any) {
+      if (error instanceof AxiosError) {
+        const errorMessage = error.response?.data?.message || 'Signup failed';
+        Alert.alert('Signup Failed', errorMessage);
+      } else {
+        Alert.alert('Signup Failed', 'An unexpected error occurred');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,9 +151,9 @@ export const UserSignup: React.FC<SignupScreenProps> = ({ navigation }) => {
           <Card style={styles.card} elevation={4}>
             <View style={styles.avatarContainer}>
               <TouchableOpacity onPress={pickImage}>
-                {photo ? (
+                {profilePhoto ? (
                   <View style={styles.avatarWrapper}>
-                    <Avatar.Image size={80} source={{ uri: photo }} />
+                    <Avatar.Image size={80} source={{ uri: profilePhoto }} />
                     <TouchableOpacity 
                       style={styles.removeButton}
                       onPress={() => setPhoto(null)}

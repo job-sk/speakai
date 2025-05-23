@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Image, ImageBackground, KeyboardAvoidingView, Platform, Alert, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Card, Text } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI } from '../../services/api';
+import { AxiosError } from 'axios';
+import { useAuth } from '../../context/AuthContext';
 
 const logo = require('../../assets/avatar-images/ai_tutor_illustration.jpg');
 const backgroundImage = require('../../assets/background-images/signin-background.jpg');
@@ -13,6 +17,7 @@ type LoginScreenProps = {
 };
 
 export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
+  const { checkAuth } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,14 +56,65 @@ export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
     return isValid;
   };
 
-  const handleContinue = () => {
-    if (validateForm()) {
+  // const handleContinue = () => {
+  //   if (validateForm()) {
+  //     setLoading(true);
+  //     // Simulate API call
+  //     setTimeout(() => {
+  //       setLoading(false);
+  //       // navigation.navigate('SelfIntroScreen');
+  //     }, 1000);
+  //   }
+  // };
+
+  const handleLogin = async () => {
+    if (!validateForm()) return;
+    
+    try {
       setLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        setLoading(false);
-        // navigation.navigate('SelfIntroScreen');
-      }, 1000);
+      const response = await authAPI.login({ email, password });
+      console.log('Login response:', response.data);
+      
+      const { token, user } = response.data;
+      
+      // Store token and user data
+      await AsyncStorage.multiSet([
+        ['accessToken', token],
+        ['userData', JSON.stringify(user)]
+      ]);
+      
+      // Update auth state
+      await checkAuth();
+      
+      // Replace current screen with MainTabs
+      navigation.replace('MainTabs');
+    } catch (error: any) {
+      if (error instanceof AxiosError) {
+        const errorMessage = error.response?.data?.message || 'Invalid credentials';
+        if (errorMessage === 'Invalid credentials') {
+          Alert.alert(
+            'Login Failed',
+            'No account found with this email. Please sign up first.',
+            [
+              {
+                text: 'Sign Up',
+                onPress: () => navigation.navigate('UserSignup'),
+                style: 'default'
+              },
+              {
+                text: 'OK',
+                style: 'cancel'
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Login Failed', errorMessage);
+        }
+      } else {
+        Alert.alert('Login Failed', 'An unexpected error occurred');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -122,7 +178,7 @@ export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
             <Button
               mode="contained"
               style={styles.button}
-              onPress={handleContinue}
+              onPress={handleLogin}
               loading={loading}
               contentStyle={{ paddingVertical: 8 }}
             >

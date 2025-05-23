@@ -1,48 +1,100 @@
-import { NavigationContainer } from '@react-navigation/native';
+import React from 'react';
+import { NavigationContainer, useNavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { WelcomeScreen } from './src/screens/WelcomeScreen';
-import { OnboardingQuestionnaireScreen } from './src/screens/onboarding/OnboardingQuestionnaireScreen';
-import { VocabularyTestScreen } from './src/screens/onboarding/VocabularyTestScreen';
 import { RootStackParamList } from './src/navigation/types';
-import { VocabularyResultScreen } from 'screens/onboarding/VocabularyResultScreen';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { UserLogin } from 'screens/onboarding/UserLogin';
 import { UserSignup } from 'screens/onboarding/UserSignup';
 import { QuestionnaireScreen } from 'screens/onboarding/QuestionnaireScreen';
-import { DashboardScreen } from 'screens/dashboard/DashboardScreen';
 import { SelfIntroScreen } from 'screens/onboarding/SelfIntroScreen';
-
+import { EventRegister } from 'react-native-event-listeners';
+import { useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { BackHandler } from 'react-native';
+import { BottomTabNavigator } from './src/navigation/BottomTabNavigator';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+function AppNavigator() {
+  const { isAuthenticated, isLoading, logout } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const currentRoute = useNavigationState(state => state?.routes[state.index]?.name);
+
+  useEffect(() => {
+    const listener = EventRegister.addEventListener('AUTH_EXPIRED', () => {
+      logout();
+      navigation.navigate('UserLoginScreen');
+    }) as string;
+
+    return () => {
+      EventRegister.removeEventListener(listener);
+    };
+  }, [navigation, logout]);
+
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (isAuthenticated) {
+        if (currentRoute === 'UserLoginScreen' || currentRoute === 'UserSignup') {
+          return true;
+        }
+      }
+      return false;
+    });
+
+    return () => backHandler.remove();
+  }, [isAuthenticated, navigation, currentRoute]);
+
+  if (isLoading) {
+    return null;
+  }
+
+  return (
+    <Stack.Navigator
+      initialRouteName={isAuthenticated ? "MainTabs" : "Welcome"}
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: '#1a1a1a' },
+        animation: 'fade',
+        animationDuration: 200,
+        presentation: 'transparentModal',
+      }}
+    >
+      {!isAuthenticated ? (
+        <>
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+          <Stack.Screen name="UserSignup" component={UserSignup} />
+          <Stack.Screen name="QuestionnaireScreen" component={QuestionnaireScreen} />
+          <Stack.Screen name="UserLoginScreen" component={UserLogin} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+          <Stack.Screen name="SelfIntroScreen" component={SelfIntroScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
+
+function AppContent() {
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#1a1a1a' }}>
+        <AuthProvider>
+          <AppNavigator />
+        </AuthProvider>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+}
+
 export default function App() {
   return (
-          <SafeAreaProvider>
-            <SafeAreaView style={{ flex: 1 , backgroundColor: '#1a1a1a'}}>
-              <NavigationContainer>
-                <Stack.Navigator
-                  initialRouteName="Welcome"
-                  screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: '#1a1a1a' },
-                    animation: 'fade',
-                    animationDuration: 200,
-                    presentation: 'transparentModal',
-                  }}
-                >
-                  <Stack.Screen name="Welcome" component={WelcomeScreen} />
-                  {/* <Stack.Screen name="Home" component={HomeScreen} /> */}
-                  {/* <Stack.Screen name="OnboardingQuestionnaire" component={OnboardingQuestionnaireScreen} /> */}
-                  {/* <Stack.Screen name="VocabularyTest" component={VocabularyTestScreen} /> */}
-                  {/* <Stack.Screen name="VocabularyResult" component={VocabularyResultScreen} /> */}
-                  <Stack.Screen name="UserSignup" component={UserSignup} />
-                  <Stack.Screen name="UserLoginScreen" component={UserLogin} />
-                  <Stack.Screen name="QuestionnaireScreen" component={QuestionnaireScreen} />
-                  <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
-                  <Stack.Screen name="SelfIntroScreen" component={SelfIntroScreen} />
-                </Stack.Navigator>
-              </NavigationContainer>
-            </SafeAreaView>
-          </SafeAreaProvider>
+    <NavigationContainer>
+      <AppContent />
+    </NavigationContainer>
   );
 }
