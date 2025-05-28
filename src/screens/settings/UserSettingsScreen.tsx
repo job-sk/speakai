@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
-import { TextInput, Button, Avatar, Text, IconButton } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native';
+import { TextInput, Button, Avatar, Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
@@ -10,6 +10,9 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { authAPI } from '../../services/api';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 export const UserSettingsScreen = () => {
   const { logout } = useAuth();
@@ -38,25 +41,19 @@ export const UserSettingsScreen = () => {
 
   const handleLogout = async () => {
     try {
-      // Get user data to extract userId
       const userDataStr = await AsyncStorage.getItem('userData');
       if (!userDataStr) {
         throw new Error('No user data found');
       }
       
       const userData = JSON.parse(userDataStr);
-      
-      // Call logout API with userId
       await authAPI.logout(userData._id);
-      
-      // Clear all stored values
       await AsyncStorage.multiRemove([
         'accessToken',
         'userData',
         'hasAnalyzedVoice'
       ]);
       
-      // Navigate to login screen
       navigation.navigate('UserLoginScreen');
     } catch (error) {
       console.error('Error during logout:', error);
@@ -66,67 +63,111 @@ export const UserSettingsScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#246bfd', '#1a1a1a']}
+        style={styles.header}
+      >
         <Text style={styles.title}>Profile Settings</Text>
-      </View>
-
-      <View style={styles.photoSection}>
-        <TouchableOpacity onPress={pickImage}>
-          {profilePhoto ? (
-            <View style={styles.avatarWrapper}>
-              <Avatar.Image size={100} source={{ uri: profilePhoto }} />
-              <IconButton
-                icon="close-circle"
-                size={24}
-                style={styles.removeButton}
-                onPress={removePhoto}
-              />
-            </View>
-          ) : (
-            <Avatar.Icon size={100} icon="account" />
-          )}
-        </TouchableOpacity>
-        <Text style={styles.uploadText}>Tap to change photo</Text>
-      </View>
+        <View style={styles.photoSection}>
+          <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
+            {profilePhoto ? (
+              <View style={styles.avatarWrapper}>
+                <Avatar.Image 
+                  size={120} 
+                  source={{ uri: profilePhoto }} 
+                  style={styles.avatar}
+                />
+                <TouchableOpacity 
+                  style={styles.removeButton}
+                  onPress={removePhoto}
+                >
+                  <MaterialCommunityIcons name="close-circle" size={28} color="#ff4444" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <MaterialCommunityIcons name="account" size={60} color="#fff" />
+              </View>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.uploadText}>Tap to change photo</Text>
+        </View>
+      </LinearGradient>
 
       <View style={styles.formSection}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Full Name</Text>
-          <View style={styles.inputWrapper}>
+        <View style={styles.card}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Full Name</Text>
             <TextInput
               value={name}
               onChangeText={setName}
               style={styles.input}
               mode="outlined"
               disabled={!isEditing}
+              theme={{
+                colors: {
+                  primary: '#246bfd',
+                  background: '#2a2a2a',
+                  text: '#fff',
+                  placeholder: '#666',
+                }
+              }}
               right={
                 <TextInput.Icon
                   icon={isEditing ? "check" : "pencil"}
                   onPress={() => setIsEditing(!isEditing)}
+                  color="#246bfd"
                 />
               }
             />
           </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email Address</Text>
+            <TextInput
+              value={email}
+              style={styles.input}
+              mode="outlined"
+              disabled
+              theme={{
+                colors: {
+                  primary: '#246bfd',
+                  background: '#2a2a2a',
+                  text: '#fff',
+                  placeholder: '#666',
+                }
+              }}
+            />
+          </View>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email Address</Text>
-          <TextInput
-            value={email}
-            style={styles.input}
-            mode="outlined"
-            disabled
-          />
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.menuItem}>
+            <MaterialCommunityIcons name="bell-outline" size={24} color="#fff" />
+            <Text style={styles.menuText}>Notifications</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#666" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem}>
+            <MaterialCommunityIcons name="shield-outline" size={24} color="#fff" />
+            <Text style={styles.menuText}>Privacy</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#666" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem}>
+            <MaterialCommunityIcons name="help-circle-outline" size={24} color="#fff" />
+            <Text style={styles.menuText}>Help & Support</Text>
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#666" />
+          </TouchableOpacity>
         </View>
 
-        <Button
-          mode="contained"
-          onPress={handleLogout}
+        <TouchableOpacity
           style={styles.logoutButton}
-          icon="logout"
+          onPress={handleLogout}
         >
-          Logout
-        </Button>
+          <MaterialCommunityIcons name="logout" size={24} color="#fff" />
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -139,32 +180,59 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    paddingTop: 40,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#fff',
+    marginBottom: 20,
   },
   photoSection: {
     alignItems: 'center',
-    padding: 20,
+  },
+  avatarContainer: {
+    marginBottom: 10,
   },
   avatarWrapper: {
     position: 'relative',
+  },
+  avatar: {
+    backgroundColor: '#2a2a2a',
+  },
+  avatarPlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#2a2a2a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#246bfd',
   },
   removeButton: {
     position: 'absolute',
     top: -8,
     right: -8,
     backgroundColor: '#1a1a1a',
+    borderRadius: 14,
+    padding: 0,
   },
   uploadText: {
-    color: '#666',
-    marginTop: 10,
+    color: '#fff',
+    opacity: 0.7,
+    marginTop: 8,
+    fontSize: 14,
   },
   formSection: {
     padding: 20,
+  },
+  card: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
   },
   inputContainer: {
     marginBottom: 20,
@@ -173,17 +241,37 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 8,
     fontSize: 16,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    fontWeight: '500',
   },
   input: {
-    flex: 1,
     backgroundColor: '#2a2a2a',
   },
-  logoutButton: {
-    marginTop: 20,
-    backgroundColor: '#ff4444',
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
   },
-}); 
+  menuText: {
+    color: '#fff',
+    fontSize: 16,
+    marginLeft: 16,
+    flex: 1,
+  },
+  logoutButton: {
+    backgroundColor: '#ff4444',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+});
