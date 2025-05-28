@@ -3,8 +3,11 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { userAPI } from 'services/api';
-import { formatDistanceToNow, format } from 'date-fns';
 import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/types';
+import { formatNumber } from '../../utils/formatters';
 
 const { width } = Dimensions.get('window');
 
@@ -17,22 +20,15 @@ type UserData = {
   englishProficiency: 'Beginner' | 'Intermediate' | 'Upper Intermediate';
   streak: number;
   lastOpened: string;
+  xpPoint: number;
 };
 
-const formatLastActive = (dateString: string): string => {
-  try {
-    const date = new Date(dateString);
-    return formatDistanceToNow(date, { addSuffix: true });
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return 'N/A';
-  }
-};
-
-export const DashboardScreen = ({ navigation }: { navigation: any }) => {
+export const DashboardScreen = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [streak, setStreak] = useState(0);
 
   const fetchUserData = async () => {
     try {
@@ -40,6 +36,7 @@ export const DashboardScreen = ({ navigation }: { navigation: any }) => {
       const response = await userAPI.getCurrentUser();
       setUserData(response.data);
       setError(null);
+      setStreak(response.data.streak);
     } catch (err) {
       console.error('Failed to fetch user data:', err);
       setError('Failed to load user data');
@@ -51,7 +48,25 @@ export const DashboardScreen = ({ navigation }: { navigation: any }) => {
   // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      fetchUserData();
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          // Fetch user data
+          const userResponse = await userAPI.getCurrentUser();
+          setUserData(userResponse.data);
+          // Check streak
+          const streakResponse = await userAPI.checkStreak();
+          setStreak(streakResponse.data.streak);
+          setError(null);
+        } catch (err) {
+          console.error('Failed to fetch data:', err);
+          setError('Failed to load data');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
     }, [])
   );
 
@@ -87,23 +102,20 @@ export const DashboardScreen = ({ navigation }: { navigation: any }) => {
           <View style={styles.userInfo}>
             <Text style={styles.username}>{userData?.name || 'User'}</Text>
             <Text style={styles.userLevel}>{userData?.englishProficiency || 'Beginner'}</Text>
-            <Text style={styles.userDetails}>
-              {userData?.nativeLanguage} • {userData?.age} years
-            </Text>
           </View>
         </View>
 
         {/* Streak Section */}
         <View style={styles.streakContainer}>
           <View style={styles.streakBox}>
-            <Text style={styles.streakNumber}>{userData?.streak || 0}</Text>
+            <Text style={styles.streakNumber}>{streak}</Text>
             <Text style={styles.streakLabel}>Day Streak</Text>
           </View>
           <View style={styles.streakBox}>
             <Text style={styles.streakNumber}>
-              {userData?.lastOpened ? formatLastActive(userData.lastOpened) : 'N/A'}
+              {formatNumber(userData?.xpPoint || 0)}
             </Text>
-            <Text style={styles.streakLabel}>Last Active</Text>
+            <Text style={styles.streakLabel}>XP Points</Text>
           </View>
         </View>
       </LinearGradient>
@@ -216,7 +228,7 @@ const styles = StyleSheet.create({
     width: width * 0.4,
   },
   streakNumber: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 4,
@@ -346,11 +358,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 40,
-  },
-  userDetails: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.7,
   },
   loadingOverlay: {
     position: 'absolute',

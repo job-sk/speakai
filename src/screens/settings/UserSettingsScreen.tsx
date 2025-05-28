@@ -11,6 +11,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { authAPI, userAPI } from '../../services/api';
 import { LinearGradient } from 'expo-linear-gradient';
+import { showToast } from '../../utils/toast';
 
 const { width } = Dimensions.get('window');
 
@@ -38,32 +39,32 @@ export const UserSettingsScreen = () => {
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
-      Alert.alert('Error', 'Failed to load user data');
+      showToast.error('Failed to load user data');
     }
   };
 
   const handleUpdateName = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Name cannot be empty');
+      showToast.error('Name cannot be empty');
       return;
     }
 
     try {
       setIsUpdating(true);
-      const response = await userAPI.updateName(name);
+      await userAPI.updateUser({ name: name.trim() });
       setIsEditing(false);
-      Alert.alert('Success', response.data.message);
+      showToast.success('Name updated successfully');
       
       // Update local storage with new user data
       const userDataStr = await AsyncStorage.getItem('userData');
       if (userDataStr) {
         const userData = JSON.parse(userDataStr);
-        userData.name = name;
+        userData.name = name.trim();
         await AsyncStorage.setItem('userData', JSON.stringify(userData));
       }
     } catch (error) {
       console.error('Error updating name:', error);
-      Alert.alert('Error', 'Failed to update name');
+      showToast.error('Failed to update name');
     } finally {
       setIsUpdating(false);
     }

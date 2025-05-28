@@ -17,6 +17,9 @@ import { BackHandler } from 'react-native';
 import { BottomTabNavigator } from './src/navigation/BottomTabNavigator';
 import { ReadingSessionScreen } from 'screens/practice/ReadingSessionScreen';
 import { ReadingResultScreen } from 'screens/practice/ReadingResultScreen';
+import { StatusBar } from 'expo-status-bar';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from './src/utils/toast';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -87,6 +90,7 @@ function AppContent() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1, backgroundColor: '#1a1a1a' }}>
+        <StatusBar style="light" />
         <AuthProvider>
           <AppNavigator />
         </AuthProvider>
@@ -99,6 +103,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <AppContent />
+      <Toast config={toastConfig} />
     </NavigationContainer>
   );
 }

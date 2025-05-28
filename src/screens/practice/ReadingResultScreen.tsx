@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { showToast } from '../../utils/toast';
+import { userAPI } from 'services/api';
 
 type ReadingResultScreenRouteProp = RouteProp<RootStackParamList, 'ReadingResultScreen'>;
 
@@ -94,11 +96,39 @@ export const ReadingResultScreen: React.FC<ReadingResultScreenProps> = ({ route 
   const { result } = route.params;
   console.log('result from reading result screen', result);
   
-  // Ensure we're accessing the correct data structure
   const pronunciationScore = result?.pronunciation_score;
   const fluencyScore = result?.fluency_score;
   const feedback = result?.feedback;
   const textWithErrors = result?.text_with_errors;
+
+  useEffect(() => {
+    const averageScore = (pronunciationScore + fluencyScore) / 2;
+    if (averageScore === 10) {
+      showToast.success('Perfect Score! 🎉 You have earned 100 XP');
+      handleUpdateXP(100);
+    } else if (averageScore >= 8) {
+      showToast.success('Great job! 🌟 You have earned 60 XP');
+      handleUpdateXP(60);
+    } else if (averageScore >= 6) {
+      showToast.success('Good effort! 💪 You have earned 30 XP');
+      handleUpdateXP(30);
+    } else {
+      showToast.info('Keep practicing! You can do better next time');
+    }
+  }, [pronunciationScore, fluencyScore]);
+
+  const handleUpdateXP = async (points: number) => {
+    try {
+      // Get current user data to get existing XP
+      const response = await userAPI.getCurrentUser();
+      const currentXP = response.data.xpPoint || 0;
+      
+      // Add new points to existing XP
+      await userAPI.updateUser({ xpPoint: currentXP + points });
+    } catch (error) {
+      console.error('Error updating XP:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
