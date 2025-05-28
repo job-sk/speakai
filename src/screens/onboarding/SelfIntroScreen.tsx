@@ -264,7 +264,7 @@ export const SelfIntroScreen: React.FC<Props> = ({ navigation }) => {
 
       console.log('FormData:', JSON.stringify(formData, null, 2));
       
-      // const response = await authAPI.analyzeSpeech(formData);
+      // const response = await authAPI.analyzeSpeech(formData, 'intro');// uncomment this to use the api
       const response = {"data":{
         "transcription": "Hello. Nice to meet you. I am Job. My name is Job. I am from India. I am a software developer. I am a front-end developer. My age is 26. I love to play football and video games. And also I am a bodybuilder.",
         "analysis": "Grammar: 9/10. Speaking Accuracy: 9/10. Your sentence construction and grammar usage are good. Keep practicing your English to improve further. Your vocabulary is appropriate and you express your thoughts clearly. Well done!",

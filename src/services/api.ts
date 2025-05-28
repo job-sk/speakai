@@ -63,8 +63,8 @@ export const authAPI = {
   login: (credentials: any) => api.post('/auth/login', credentials),
   logout: (userId: string) => api.post('/auth/logout', { userId }),
 
-  analyzeSpeech: (formData: FormData) => {
-    return api.post('/user/analyze-speech', formData, {
+  analyzeSpeech: (formData: FormData, type: string) => {
+    return api.post(`/user/analyze-speech?type=${type}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         'Accept': 'application/json',

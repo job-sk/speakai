@@ -1,11 +1,75 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { userAPI } from 'services/api';
+import { formatDistanceToNow, format } from 'date-fns';
 
 const { width } = Dimensions.get('window');
 
-export const DashboardScreen = () => {
+type UserData = {
+  name: string;
+  email: string;
+  profilePhoto: string;
+  age: number;
+  nativeLanguage: string;
+  englishProficiency: 'Beginner' | 'Intermediate' | 'Upper Intermediate';
+  streak: number;
+  lastOpened: string;
+};
+
+const formatLastActive = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'N/A';
+  }
+};
+
+export const DashboardScreen = ({ navigation }: { navigation: any }) => {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      setLoading(true);
+      const response = await userAPI.getCurrentUser();
+      setUserData(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch user data:', err);
+      setError('Failed to load user data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#246bfd" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchUserData}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container}>
       {/* User Profile Section */}
@@ -14,29 +78,36 @@ export const DashboardScreen = () => {
         style={styles.headerGradient}
       >
         <View style={styles.profileSection}>
-          <Image
-            source={{ uri: 'https://images.pexels.com/photos/1542085/pexels-photo-1542085.jpeg' }}
-            style={styles.profileImage}
-          />
+          <View style={styles.profileIconContainer}>
+            {userData?.profilePhoto ? (
+              <Image 
+                source={{ uri: userData.profilePhoto }} 
+                style={styles.profileImage}
+              />
+            ) : (
+              <MaterialCommunityIcons name="account" size={40} color="#fff" />
+            )}
+          </View>
           <View style={styles.userInfo}>
-            <Text style={styles.username}>Sarah Wilson</Text>
-            <Text style={styles.userLevel}>Advanced • B2 Level</Text>
+            <Text style={styles.username}>{userData?.name || 'User'}</Text>
+            <Text style={styles.userLevel}>{userData?.englishProficiency || 'Beginner'}</Text>
+            <Text style={styles.userDetails}>
+              {userData?.nativeLanguage} • {userData?.age} years
+            </Text>
           </View>
         </View>
 
         {/* Streak Section */}
         <View style={styles.streakContainer}>
           <View style={styles.streakBox}>
-            <Text style={styles.streakNumber}>12</Text>
+            <Text style={styles.streakNumber}>{userData?.streak || 0}</Text>
             <Text style={styles.streakLabel}>Day Streak</Text>
           </View>
           <View style={styles.streakBox}>
-            <Text style={styles.streakNumber}>85%</Text>
-            <Text style={styles.streakLabel}>Accuracy</Text>
-          </View>
-          <View style={styles.streakBox}>
-            <Text style={styles.streakNumber}>2.5K</Text>
-            <Text style={styles.streakLabel}>XP Points</Text>
+            <Text style={styles.streakNumber}>
+              {userData?.lastOpened ? formatLastActive(userData.lastOpened) : 'N/A'}
+            </Text>
+            <Text style={styles.streakLabel}>Last Active</Text>
           </View>
         </View>
       </LinearGradient>
@@ -44,7 +115,10 @@ export const DashboardScreen = () => {
       {/* Today's Practice */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Today's Practice</Text>
-        <TouchableOpacity style={styles.practiceCard}>
+        <TouchableOpacity 
+          style={styles.practiceCard}
+          onPress={() => navigation.navigate('ReadingSessionScreen')}
+        >
           <LinearGradient
             colors={['#2E3192', '#1BFFFF']}
             start={{ x: 0, y: 0 }}
@@ -103,12 +177,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  profileImage: {
+  profileIconContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
     borderWidth: 3,
     borderColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   userInfo: {
     marginLeft: 15,
@@ -126,7 +203,7 @@ const styles = StyleSheet.create({
   },
   streakContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     marginTop: 10,
   },
   streakBox: {
@@ -134,7 +211,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     alignItems: 'center',
-    width: width * 0.28,
+    width: width * 0.4,
   },
   streakNumber: {
     fontSize: 24,
@@ -238,5 +315,45 @@ const styles = StyleSheet.create({
   scoreText: {
     color: '#246bfd',
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#246bfd',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+  },
+  userDetails: {
+    fontSize: 14,
+    color: '#fff',
+    opacity: 0.7,
   },
 });

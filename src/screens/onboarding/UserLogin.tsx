@@ -13,7 +13,7 @@ const logo = require('../../assets/avatar-images/ai_tutor_illustration.jpg');
 const backgroundImage = require('../../assets/background-images/signin-background.jpg');
 
 type LoginScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'UserLoginScreen'>;
+  navigation: NativeStackNavigationProp<RootStackParamList>;
 };
 
 export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
@@ -98,7 +98,7 @@ export const UserLogin: React.FC<LoginScreenProps> = ({navigation}) => {
             [
               {
                 text: 'Sign Up',
-                onPress: () => navigation.navigate('UserSignup'),
+                onPress: () => navigation.navigate('UserSignup', {}),
                 style: 'default'
               },
               {
