@@ -15,6 +15,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { BackHandler } from 'react-native';
 import { BottomTabNavigator } from './src/navigation/BottomTabNavigator';
+import { ReadingSessionScreen } from 'screens/practice/ReadingSessionScreen';
+import { ReadingResultScreen } from 'screens/practice/ReadingResultScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -73,6 +75,8 @@ function AppNavigator() {
         <>
           <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
           <Stack.Screen name="SelfIntroScreen" component={SelfIntroScreen} />
+          <Stack.Screen name="ReadingSessionScreen" component={ReadingSessionScreen} />
+          <Stack.Screen name="ReadingResultScreen" component={ReadingResultScreen} />
         </>
       )}
     </Stack.Navigator>
