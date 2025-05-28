@@ -80,6 +80,7 @@ export const authAPI = {
 
 export const userAPI = {
   getCurrentUser: () => api.get('/user/me'),
+  updateName: (name: string) => api.patch('/user/update-name', { name }),
 };
 
 // export const speechAPI = {

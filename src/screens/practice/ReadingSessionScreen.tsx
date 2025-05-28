@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Dimensions,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -22,13 +23,10 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { authAPI } from 'services/api';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Speech from 'expo-speech';
-
-type RootStackParamList = {
-  ReadingResultScreen: { result: any };
-};
+import { RootStackParamList } from '../../navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'ReadingResultScreen'>;
 
@@ -51,7 +49,6 @@ export const ReadingSessionScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [recordingURI, setRecordingURI] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -64,6 +61,30 @@ export const ReadingSessionScreen = () => {
   const durationTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulseAnim = useSharedValue(1);
   const waveAnim = useSharedValue(0);
+
+  const resetScreen = useCallback(() => {
+    setRecording(null);
+    setRecordingURI(null);
+    setIsRecording(false);
+    setIsPlaying(false);
+    setSound(null);
+  }, []);
+
+  // Reset screen when it comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      resetScreen();
+      return () => {
+        // Cleanup when screen loses focus
+        if (recording) {
+          recording.stopAndUnloadAsync();
+        }
+        if (sound) {
+          sound.unloadAsync();
+        }
+      };
+    }, [])
+  );
 
   useEffect(() => {
     return () => {
@@ -102,11 +123,6 @@ export const ReadingSessionScreen = () => {
 
       setRecording(recording);
       setIsRecording(true);
-      setRecordingDuration(0);
-
-      durationTimer.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
 
       // Start animations
       pulseAnim.value = withRepeat(
@@ -134,9 +150,6 @@ export const ReadingSessionScreen = () => {
     if (!recording) return;
 
     setIsRecording(false);
-    if (durationTimer.current) {
-      clearInterval(durationTimer.current);
-    }
 
     cancelAnimation(pulseAnim);
     cancelAnimation(waveAnim);
@@ -204,94 +217,75 @@ export const ReadingSessionScreen = () => {
       } as any);
       
       //Todo: uncomment this to use the api
-      const response = await authAPI.analyzeSpeech(formData, 'reading');
-      console.log('data from reading session screen',response.data);
+      // const response = await authAPI.analyzeSpeech(formData, 'reading');
+      // console.log('data from reading session screen',response.data);
       
       //! moke data
-      // const response = {"data":
-      //   {
-      //     "pronunciation_score": 8,
-      //     "fluency_score": 7,
-      //     "feedback": "Good attempt with minor grammatical errors",
-      //     "text_with_errors": {
-      //       "full_text": "Consistency are the key to master any skill. Whether it's learning new language, coding or fitness, small daily effort builds lasting progress. Instead waiting for motivation, create routine that keeps you move forward. Over time, this habits compound, leading to big improvement. Even in tough days, showing up matter more than perfection.",
-      //       "errors": [
-      //         {
-      //           "incorrect": "are",
-      //           "correction": "is",
-      //           "type": "verb_form",
-      //           "position": {
-      //             "start": 12,
-      //             "end": 15
-      //           },
-      //           "context": "Consistency are the key"
-      //         },
-      //         {
-      //           "incorrect": "master",
-      //           "correction": "mastering",
-      //           "type": "verb_form",
-      //           "position": {
-      //             "start": 25,
-      //             "end": 31
-      //           },
-      //           "context": "to master any skill"
-      //         },
-      //         {
-      //           "incorrect": "this",
-      //           "correction": "these",
-      //           "type": "word_choice",
-      //           "position": {
-      //             "start": 172,
-      //             "end": 176
-      //           },
-      //           "context": "Over time, this habits compound"
-      //         },
-      //         {
-      //           "incorrect": "big",
-      //           "correction": "significant",
-      //           "type": "word_choice",
-      //           "position": {
-      //             "start": 191,
-      //             "end": 194
-      //           },
-      //           "context": "leading to big improvement"
-      //         }
-      //       ]
-      //     },
-      //     "areas_to_improve": {
-      //       "articles": ["learning new language", "create routine", "in tough days"],
-      //       "plurals": ["small daily effort builds", "this habits compound", "showing up matter"],
-      //       "verb_forms": ["Consistency are the key", "to master any skill", "keeps you move forward"],
-      //       "word_choice": ["Over time, this habits compound", "leading to big improvement"]
-      //     },
-      //     "key_errors": ["Incorrect verb form 'are' instead of 'is'", "Incorrect verb form 'master' instead of 'mastering'", "Incorrect word 'this' instead of 'these'", "Incorrect word 'big' instead of 'significant'"]
-      //   }
+      const response = {"data":
+        {
+          "pronunciation_score": 8,
+          "fluency_score": 7,
+          "feedback": "Good attempt with minor grammatical errors",
+          "text_with_errors": {
+            "full_text": "Consistency are the key to master any skill. Whether it's learning new language, coding or fitness, small daily effort builds lasting progress. Instead waiting for motivation, create routine that keeps you move forward. Over time, this habits compound, leading to big improvement. Even in tough days, showing up matter more than perfection.",
+            "errors": [
+              {
+                "incorrect": "are",
+                "correction": "is",
+                "type": "verb_form",
+                "position": {
+                  "start": 12,
+                  "end": 15
+                },
+                "context": "Consistency are the key"
+              },
+              {
+                "incorrect": "master",
+                "correction": "mastering",
+                "type": "verb_form",
+                "position": {
+                  "start": 25,
+                  "end": 31
+                },
+                "context": "to master any skill"
+              },
+              {
+                "incorrect": "this",
+                "correction": "these",
+                "type": "word_choice",
+                "position": {
+                  "start": 172,
+                  "end": 176
+                },
+                "context": "Over time, this habits compound"
+              },
+              {
+                "incorrect": "big",
+                "correction": "significant",
+                "type": "word_choice",
+                "position": {
+                  "start": 191,
+                  "end": 194
+                },
+                "context": "leading to big improvement"
+              }
+            ]
+          },
+          "areas_to_improve": {
+            "articles": ["learning new language", "create routine", "in tough days"],
+            "plurals": ["small daily effort builds", "this habits compound", "showing up matter"],
+            "verb_forms": ["Consistency are the key", "to master any skill", "keeps you move forward"],
+            "word_choice": ["Over time, this habits compound", "leading to big improvement"]
+          },
+          "key_errors": ["Incorrect verb form 'are' instead of 'is'", "Incorrect verb form 'master' instead of 'mastering'", "Incorrect word 'this' instead of 'these'", "Incorrect word 'big' instead of 'significant'"]
+        }
         
-      // }
+      }
       navigation.navigate('ReadingResultScreen', { result: response.data });
     } catch (error) {
       Alert.alert('Failed to analyze recording')
     }
   };
-
-    // In a real app, this would call your API
-    // For now, we'll use sample data
-  //   setAnalysisResult({
-  //     transcription: "Artificial Intelligence is transforming our world in unprecedented ways. From virtual assistants to self-driving cars, AI is becoming an integral part of our daily lives.",
-  //     feedback: {
-  //       pronunciation: {
-  //         score: 8.5,
-  //         issues: ["unprecedented", "integral"]
-  //       },
-  //       fluency: {
-  //         score: 9.0,
-  //         issues: ["Pause after 'ways'"]
-  //       },
-  //       overall: "Good reading with clear pronunciation. Work on the word 'unprecedented'."
-  //     }
-  //   });
-  //   setShowAnalysis(true);
-  // };
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseAnim.value }],
@@ -313,7 +307,6 @@ export const ReadingSessionScreen = () => {
     }
     setRecordingURI(null);
     setAudioWaveform([]);
-    setRecordingDuration(0);
   };
 
   useEffect(() => {
@@ -418,6 +411,16 @@ export const ReadingSessionScreen = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Reading Practice</Text>
+      </View>
+
       <ScrollView style={styles.scrollView}>
         <View style={styles.articleContainer}>
           <Text style={styles.articleTitle}>{sampleArticle.title}</Text>
@@ -537,8 +540,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a1a',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#246bfd',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
   scrollView: {
     flex: 1,
+    marginTop: 60, // Height of the header
+  },
+  backButton: {
+    marginRight: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   articleContainer: {
     backgroundColor: '#2a2a2a',

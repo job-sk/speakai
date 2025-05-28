@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native';
-import { TextInput, Button, Avatar, Text } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { TextInput, Avatar, Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
@@ -9,18 +9,65 @@ import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
-import { authAPI } from '../../services/api';
+import { authAPI, userAPI } from '../../services/api';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
 export const UserSettingsScreen = () => {
   const { logout } = useAuth();
-  const [name, setName] = useState('John Doe');
-  const [email, setEmail] = useState('john@example.com');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const response = await userAPI.getCurrentUser();
+      const userData = response.data;
+      setName(userData.name);
+      setEmail(userData.email);
+      if (userData.profilePhoto) {
+        setProfilePhoto(userData.profilePhoto);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      Alert.alert('Error', 'Failed to load user data');
+    }
+  };
+
+  const handleUpdateName = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Name cannot be empty');
+      return;
+    }
+
+    try {
+      setIsUpdating(true);
+      const response = await userAPI.updateName(name);
+      setIsEditing(false);
+      Alert.alert('Success', response.data.message);
+      
+      // Update local storage with new user data
+      const userDataStr = await AsyncStorage.getItem('userData');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        userData.name = name;
+        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+      }
+    } catch (error) {
+      console.error('Error updating name:', error);
+      Alert.alert('Error', 'Failed to update name');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -103,20 +150,23 @@ export const UserSettingsScreen = () => {
               onChangeText={setName}
               style={styles.input}
               mode="outlined"
-              disabled={!isEditing}
+              disabled={!isEditing || isUpdating}
+              textColor="#fff"
               theme={{
                 colors: {
                   primary: '#246bfd',
                   background: '#2a2a2a',
                   text: '#fff',
                   placeholder: '#666',
+                  onSurface: '#fff',
                 }
               }}
               right={
                 <TextInput.Icon
                   icon={isEditing ? "check" : "pencil"}
-                  onPress={() => setIsEditing(!isEditing)}
+                  onPress={isEditing ? handleUpdateName : () => setIsEditing(true)}
                   color="#246bfd"
+                  disabled={isUpdating}
                 />
               }
             />
@@ -129,12 +179,14 @@ export const UserSettingsScreen = () => {
               style={styles.input}
               mode="outlined"
               disabled
+              textColor="#fff"
               theme={{
                 colors: {
                   primary: '#246bfd',
                   background: '#2a2a2a',
                   text: '#fff',
                   placeholder: '#666',
+                  onSurface: '#fff',
                 }
               }}
             />
@@ -180,7 +232,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    paddingTop: 60,
+    paddingTop: 30,
     paddingBottom: 40,
   },
   title: {

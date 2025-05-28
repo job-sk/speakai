@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 
@@ -90,6 +90,7 @@ interface ReadingResultScreenProps {
 }
 
 export const ReadingResultScreen: React.FC<ReadingResultScreenProps> = ({ route }) => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { result } = route.params;
   console.log('result from reading result screen', result);
   
@@ -98,82 +99,73 @@ export const ReadingResultScreen: React.FC<ReadingResultScreenProps> = ({ route 
   const fluencyScore = result?.fluency_score;
   const feedback = result?.feedback;
   const textWithErrors = result?.text_with_errors;
-  
-  console.log('pronunciation score:', pronunciationScore);
-  console.log('fluency score:', fluencyScore);
-  console.log('feedback:', feedback);
-  console.log('text with errors:', textWithErrors);
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
+        </TouchableOpacity>
         <Text style={styles.title}>Reading Analysis</Text>
       </View>
 
-      <View style={styles.scoresContainer}>
-        <View style={styles.scoreCard}>
-          <MaterialCommunityIcons name="microphone" size={24} color="#246bfd" />
-          <Text style={styles.scoreValue}>{pronunciationScore}</Text>
-          <Text style={styles.scoreLabel}>Pronunciation</Text>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.scoresContainer}>
+          <View style={styles.scoreCard}>
+            <MaterialCommunityIcons name="microphone" size={24} color="#246bfd" />
+            <Text style={styles.scoreValue}>{pronunciationScore}</Text>
+            <Text style={styles.scoreLabel}>Pronunciation</Text>
+          </View>
+          <View style={styles.scoreCard}>
+            <MaterialCommunityIcons name="chart-line" size={24} color="#246bfd" />
+            <Text style={styles.scoreValue}>{fluencyScore}</Text>
+            <Text style={styles.scoreLabel}>Fluency</Text>
+          </View>
         </View>
-        <View style={styles.scoreCard}>
-          <MaterialCommunityIcons name="chart-line" size={24} color="#246bfd" />
-          <Text style={styles.scoreValue}>{fluencyScore}</Text>
-          <Text style={styles.scoreLabel}>Fluency</Text>
+
+        <View style={styles.feedbackContainer}>
+          <Text style={styles.sectionTitle}>Feedback</Text>
+          <Text style={styles.feedbackText}>{feedback}</Text>
         </View>
-      </View>
 
-      <View style={styles.feedbackContainer}>
-        <Text style={styles.sectionTitle}>Feedback</Text>
-        <Text style={styles.feedbackText}>{feedback}</Text>
-      </View>
-
-      <View style={styles.transcriptionSection}>
-        <Text style={styles.sectionTitle}>Your Reading</Text>
-        <View style={styles.transcriptionContainer}>
-          {textWithErrors ? (
-            <TextWithErrors 
-              text={textWithErrors.full_text}
-              errors={textWithErrors.errors}
-            />
-          ) : (
-            <Text style={styles.transcriptionText}>No transcription available.</Text>
-          )}
+        <View style={styles.transcriptionSection}>
+          <Text style={styles.sectionTitle}>Your Reading</Text>
+          <View style={styles.transcriptionContainer}>
+            {textWithErrors ? (
+              <TextWithErrors 
+                text={textWithErrors.full_text}
+                errors={textWithErrors.errors}
+              />
+            ) : (
+              <Text style={styles.transcriptionText}>No transcription available.</Text>
+            )}
+          </View>
         </View>
-      </View>
 
-      <View style={styles.areasToImprove}>
-        {/* <Text style={styles.sectionTitle}>Areas to Improve</Text>
-        {result.areas_to_improve
-          ? Object.entries(result.areas_to_improve).map(([area, issues]) => (
+        <View style={styles.areasToImprove}>
+          <Text style={styles.sectionTitle}>Areas to Improve</Text>
+
+          {result.areas_to_improve && Object.entries(result.areas_to_improve).length > 0 ? (
+          Object.entries(result.areas_to_improve).map(([area, issues]) => (
               <View key={area} style={styles.improvementArea}>
-                <Text style={styles.areaTitle}>{area.replace('_', ' ').toUpperCase()}</Text>
-                {issues.map((issue: string, index: number) => (
+              <Text style={styles.areaTitle}>
+                  {area.replace('_', ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toUpperCase()}
+              </Text>
+              {issues.map((issue: string, index: number) => (
                   <Text key={index} style={styles.issueText}>• {issue}</Text>
-                ))}
+              ))}
               </View>
-            ))
-          : <Text>No areas to improve found.</Text>
-        } */}
-        <Text style={styles.sectionTitle}>Areas to Improve</Text>
+          ))
+          ) : (
+          <Text style={styles.issueText}>No areas to improve found.</Text>
+          )}
 
-        {result.areas_to_improve && Object.entries(result.areas_to_improve).length > 0 ? (
-        Object.entries(result.areas_to_improve).map(([area, issues]) => (
-            <View key={area} style={styles.improvementArea}>
-            <Text style={styles.areaTitle}>
-                {area.replace('_', ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toUpperCase()}
-            </Text>
-            {issues.map((issue: string, index: number) => (
-                <Text key={index} style={styles.issueText}>• {issue}</Text>
-            ))}
-            </View>
-        ))
-        ) : (
-        <Text style={styles.issueText}>No areas to improve found.</Text>
-        )}
-
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -183,11 +175,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
   },
   header: {
-    padding: 20,
-    backgroundColor: '#2a2a2a',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#246bfd',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
+  scrollView: {
+    flex: 1,
+    marginTop: 60, // Height of the header
+  },
+  backButton: {
+    marginRight: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
   },
