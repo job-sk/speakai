@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'userData']);
+      await AsyncStorage.multiRemove(['accessToken', 'userData']);
       setIsAuthenticated(false);
     } catch (error) {
       console.error('Error during logout:', error);

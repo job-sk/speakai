@@ -52,7 +52,6 @@ export const UserSettingsScreen = () => {
       // Clear all stored values
       await AsyncStorage.multiRemove([
         'accessToken',
-        'refreshToken',
         'userData',
         'hasAnalyzedVoice'
       ]);
